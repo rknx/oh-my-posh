@@ -1,3 +1,4 @@
+#. "$PSScriptRoot\Helpers\PoshGit.ps1"
 <#
 .SYNOPSIS
     Defines whether or not the current terminal supports ANSI characters
@@ -5,6 +6,8 @@
     Logic taken from posh-git that sets the $GitPromptSettings.AnsiConsole bool:
     [bool]$AnsiConsole = $Host.UI.SupportsVirtualTerminal -or ($Env:ConEmuANSI -eq "ON")
 #>
+
+
 function Test-IsVanillaWindow {
     $hasAnsiSupport = (Test-AnsiTerminal) -or ($Env:ConEmuANSI -eq "ON") -or ($env:PROMPT) -or ($env:TERM_PROGRAM -eq "Hyper") -or ($env:TERM_PROGRAM -eq "vscode")
     return !$hasAnsiSupport
