@@ -1,5 +1,3 @@
-#requires -Version 2 -Modules posh-git
-
 function Write-Theme {
     param(
         [bool]
@@ -12,32 +10,38 @@ function Write-Theme {
     $clocksymbol = $sl.PromptSymbols.ClockSymbol
 
     ## Left Part
+	
+	# OS logo
     $prompt = Write-Prompt -Object " $($sl.PromptSymbols.StartSymbol) " -ForegroundColor $sl.Colors.SessionInfoForegroundColor -BackgroundColor $sl.Colors.SessionInfoBackgroundColor
-    $prompt += Write-Prompt -Object "$($sl.PromptSymbols.SegmentSubForwardSymbol) " -ForegroundColor $sl.Colors.PromptForegroundColor -BackgroundColor $sl.Colors.SessionInfoBackgroundColor
+    $prompt += Write-Prompt -Object "$($sl.PromptSymbols.SegmentForwardSymbol) " -ForegroundColor $sl.Colors.SessionInfoBackgroundColor -BackgroundColor $sl.Colors.UserBackgroundColor
+	
+	# User
+	$prompt += Write-Prompt -Object "PS: " -ForegroundColor $sl.Colors.UserForegroundColor -BackgroundColor $sl.Colors.UserBackgroundColor
+	if (Test-Administrator) {
+        $prompt += Write-Prompt -Object "$($sl.PromptSymbols.ElevatedSymbol) " -ForegroundColor $sl.Colors.UserForegroundColor -BackgroundColor $sl.Colors.UserBackgroundColor
+    }
+	$user = $sl.CurrentUser
+	$prompt += Write-Prompt -Object "$user " -ForegroundColor $sl.Colors.UserForegroundColor -BackgroundColor $sl.Colors.UserBackgroundColor
+    $prompt += Write-Prompt -Object "$($sl.PromptSymbols.SegmentForwardSymbol) " -ForegroundColor $sl.Colors.UserBackgroundColor -BackgroundColor $sl.Colors.PathBackgroundColor
+	
+	# Path
+	# Path symbol
     $pathSymbol = if ($pwd.Path -eq $HOME) { $sl.PromptSymbols.PathHomeSymbol } else { $sl.PromptSymbols.PathSymbol }
 
     # Writes the drive portion
     $path = $pathSymbol + " " + (Get-FullPath -dir $pwd) + " "
-    $prompt += Write-Prompt -Object $path -ForegroundColor $sl.Colors.DriveForegroundColor -BackgroundColor $sl.Colors.SessionInfoBackgroundColor
+    $prompt += Write-Prompt -Object $path -ForegroundColor $sl.Colors.PathForegroundColor -BackgroundColor $sl.Colors.PathBackgroundColor
 
-    $status = Get-VCSStatus
-    if ($status) {
-        $themeInfo = Get-VcsInfo -status ($status)
-        $prompt += Write-Prompt -Object $sl.PromptSymbols.SegmentSubForwardSymbol -ForegroundColor $sl.Colors.PromptForegroundColor -BackgroundColor $sl.Colors.SessionInfoBackgroundColor
-        $prompt += Write-Prompt -Object " $($themeInfo.VcInfo) " -ForegroundColor $themeInfo.BackgroundColor -BackgroundColor $sl.Colors.SessionInfoBackgroundColor
-    }
     If ($with) {
         $sWith = " $($with.ToUpper())"
         $prompt += Write-Prompt -Object $sl.PromptSymbols.SegmentSubForwardSymbol -ForegroundColor $sl.Colors.PromptForegroundColor -BackgroundColor $sl.Colors.SessionInfoBackgroundColor
         $prompt += Write-Prompt -Object $sWith -ForegroundColor $sl.Colors.WithForegroundColor -BackgroundColor $sl.Colors.SessionInfoBackgroundColor
     }
-    $prompt += Write-Prompt -Object $sl.PromptSymbols.SegmentForwardSymbol -ForegroundColor $sl.Colors.SessionInfoBackgroundColor
+    $prompt += Write-Prompt -Object $sl.PromptSymbols.SegmentForwardSymbol -ForegroundColor $sl.Colors.PathBackgroundColor
     ###
 
     ## Right Part
     $rightElements = New-Object 'System.Collections.Generic.List[Tuple[string,ConsoleColor]]'
-    $login = $sl.CurrentUser
-    $computer = [System.Environment]::MachineName;
 
     $rightElements.Add([System.Tuple]::Create($sl.PromptSymbols.SegmentBackwardSymbol, $sl.Colors.SessionInfoBackgroundColor))
     # List of all right elements
@@ -45,11 +49,6 @@ function Write-Theme {
         $rightElements.Add([System.Tuple]::Create(" $(Get-VirtualEnvName) $venvsymbol ", $sl.Colors.VirtualEnvForegroundColor))
         $rightElements.Add([System.Tuple]::Create($sl.PromptSymbols.SegmentSubBackwardSymbol, $sl.Colors.PromptForegroundColor))
     }
-    if (Test-Administrator) {
-        $rightElements.Add([System.Tuple]::Create("  $adminsymbol", $sl.Colors.AdminIconForegroundColor))
-    }
-    $rightElements.Add([System.Tuple]::Create(" $login@$computer ", $sl.Colors.UserForegroundColor))
-    $rightElements.Add([System.Tuple]::Create($sl.PromptSymbols.SegmentSubBackwardSymbol, $sl.Colors.PromptForegroundColor))
     $rightElements.Add([System.Tuple]::Create(" $(Get-Date -Format HH:mm:ss) $clocksymbol ", $sl.Colors.TimestampForegroundColor))
     $lengthList = [Linq.Enumerable]::Select($rightElements, [Func[Tuple[string, ConsoleColor], int]] { $args[0].Item1.Length })
     $total = [Linq.Enumerable]::Sum($lengthList)
@@ -83,15 +82,18 @@ $sl.PromptSymbols.ClockSymbol = [char]::ConvertFromUtf32(0xf64f)
 $sl.PromptSymbols.PathHomeSymbol = [char]::ConvertFromUtf32(0xf015)
 $sl.PromptSymbols.PathSymbol = [char]::ConvertFromUtf32(0xf07c)
 $sl.Colors.PromptBackgroundColor = [ConsoleColor]::DarkGray
-$sl.Colors.SessionInfoBackgroundColor = [ConsoleColor]::DarkGray
+$sl.Colors.SessionInfoBackgroundColor = [ConsoleColor]::Gray
 $sl.Colors.VirtualEnvBackgroundColor = [ConsoleColor]::DarkGray
 $sl.Colors.PromptSymbolColor = [ConsoleColor]::Green
 $sl.Colors.CommandFailedIconForegroundColor = [ConsoleColor]::DarkRed
 $sl.Colors.DriveForegroundColor = [ConsoleColor]::Cyan
 $sl.Colors.PromptForegroundColor = [ConsoleColor]::Gray
-$sl.Colors.SessionInfoForegroundColor = [ConsoleColor]::White
+$sl.Colors.SessionInfoForegroundColor = [ConsoleColor]::Black
 $sl.Colors.WithForegroundColor = [ConsoleColor]::Red
 $sl.Colors.VirtualEnvForegroundColor = [System.ConsoleColor]::Magenta
 $sl.Colors.TimestampForegroundColor = [ConsoleColor]::Green
 $sl.Colors.UserForegroundColor = [ConsoleColor]::Yellow
+$sl.Colors.UserBackgroundColor = [ConsoleColor]::DarkGreen
+$sl.Colors.PathForegroundColor = [ConsoleColor]::White
+$sl.Colors.PathBackgroundColor = [ConsoleColor]::Blue
 $sl.Colors.GitForegroundColor = [ConsoleColor]::White # Just in case...
