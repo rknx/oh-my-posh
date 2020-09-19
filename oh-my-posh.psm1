@@ -1,13 +1,36 @@
-#requires -Version 2 -Modules posh-git
-
 . "$PSScriptRoot\defaults.ps1"
-. "$PSScriptRoot\Helpers\PoshGit.ps1"
 . "$PSScriptRoot\Helpers\Prompt.ps1"
 
 <#
         .SYNOPSIS
         Generates the prompt before each line in the console
 #>
+
+function Write-Prompt($Object, $ForegroundColor = $null, $BackgroundColor = $null) {
+    $s = $global:GitPromptSettings
+    if ($s -and ($null -eq $ForegroundColor)) {
+        $ForegroundColor = $s.DefaultForegroundColor
+    }
+    if ($BackgroundColor -is [string]) {
+        $BackgroundColor = [ConsoleColor]$BackgroundColor
+    }
+    if ($ForegroundColor -is [string]) {
+        $ForegroundColor = [ConsoleColor]$ForegroundColor
+    }
+
+    $writeHostParams = @{
+        Object = $Object;
+        NoNewLine = $true;
+    }
+    if (($BackgroundColor -ge 0) -and ($BackgroundColor -le 15)) {
+        $writeHostParams.BackgroundColor = $BackgroundColor
+    }
+    if (($ForegroundColor -ge 0) -and ($ForegroundColor -le 15)) {
+        $writeHostParams.ForegroundColor = $ForegroundColor
+    }
+    Write-Host @writeHostParams
+}
+
 function Set-Prompt {
     Import-Module $sl.CurrentThemeLocation -Force
 
@@ -17,10 +40,10 @@ function Set-Prompt {
         $sl.ErrorCount = $global:error.Count
 
         #Start the vanilla posh-git when in a vanilla window, else: go nuts
-        if(Test-IsVanillaWindow) {
-            Write-Host -Object ($pwd.ProviderPath) -NoNewline
-            Write-VcsStatus
-        }
+        #if(Test-IsVanillaWindow) {
+            #Write-Host -Object ($pwd.ProviderPath) -NoNewline
+            #Write-VcsStatus
+        #}
 
         Reset-CursorPosition
         $prompt = (Write-Theme -lastCommandFailed $lastCommandFailed)
@@ -92,9 +115,7 @@ function Show-ThemeSymbols {
     Write-Host -Object "`n--PromptSymbols--`n"
     $sl.PromptSymbols.Keys | Sort-Object | ForEach-Object { Write-Host -Object ("{0,3} {1}" -f $sl.PromptSymbols[$_], $_) }
     Write-Host -Object ''
-    Write-Host -Object "`n--GitSymbols--`n"
-    $sl.GitSymbols.Keys | Sort-Object | ForEach-Object { Write-Host -Object ("{0,3} {1}" -f $sl.GitSymbols[$_], $_) }
-    Write-Host -Object ''
+    
 }
 
 function Write-ColorPreview {
@@ -205,6 +226,7 @@ Register-ArgumentCompleter `
         -CommandName Set-Theme `
         -ParameterName name `
         -ScriptBlock $function:ThemeCompletion
+
 
 $sl = $global:ThemeSettings #local settings
 $sl.ErrorCount = $global:error.Count
